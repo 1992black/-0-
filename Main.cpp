@@ -1,392 +1,281 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <algorithm>
-#include <vector>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctime>
+#include<cstdio>
+#include<cstdlib>
+#include<cstring>
+#include<cctype>
+#include<cmath>
+#include<algorithm>
+#include<iostream>
+#include<string>
+#include<vector>
+#include<bitset>
+#include<queue>
+#include<stack>
+#include<list>
+#include<map>
+#include<set>
+#include<hash_map>
+
+#define TEST
+
+#define LL long long
+#define Mt(f, x) memset(f, x, sizeof(f));
+#define rep(i, s, e) for(int i = (s); i <= (e); ++i)
+#ifdef TEST
+    #define See(a) cout << #a << " = " << a << endl;
+    #define See2(a, b) cout << #a << " = " << a << ' ' << #b << " = " << b << endl;
+    #define debug(a, s, e) rep(_i, s, e) {cout << a[_i] << ' ';} cout << endl;
+    #define debug2(a, s, e, ss, ee) rep(i_, s, e) {debug(a[i_], ss, ee)}
+#else
+    #define See(a)
+    #define See2(a, b)
+    #define debug(a, s, e)
+    #define debug2(a, s, e, ss, ee)
+#endif // TEST
+
+const int MAX = 2e9;
+const int MIN = -2e9;
+const double eps = 1e-8;
+const double PI = acos(-1.0);
 
 using namespace std;
+using namespace __gnu_cxx;
 
-void JustACout(vector<vector<string> > m_vvsWhatEver, vector<int> m_vnSupportCount)
+namespace __gnu_cxx
 {
-	cout << endl;
-	for (int i = 0; i < m_vvsWhatEver.size(); i++)
-	{
-		for (int j = 0; j < m_vvsWhatEver.at(i).size(); j++)
-		{
-			cout << m_vvsWhatEver.at(i).at(j) << ' ';
-		}
-		cout << m_vnSupportCount.at(i) << endl;
-	}
-	cout << endl;
-}
-//删除最小次数的数
-void DelMinNum(vector<int> *m_lnSupportCount, vector<vector<string> > *m_llsSupport, int m_nThreshold)
-{
-/*
-	int m_nMinNum = m_lnSupportCount->at(0);
-
-	for (int i = 1; i < m_lnSupportCount->size(); i++)
-	{
-		m_nMinNum = m_nMinNum > m_lnSupportCount->at(i) ? m_lnSupportCount->at(i) : m_nMinNum;
-	}
-*/
-	for (int i = 0; i < m_lnSupportCount->size(); i++)
-	{
-		if (m_lnSupportCount->at(i) < m_nThreshold)
-		{
-			m_lnSupportCount->erase(m_lnSupportCount->begin() + i);
-			m_llsSupport->erase(m_llsSupport->begin() + i);
-			i--;
-		}
-	}
-	return;
+    template<> struct hash<const string>
+    {
+        size_t operator()(const string &s) const
+        {
+            return hash<const char*>()(s.c_str());
+        }
+    };
+    template<> struct hash<string>
+    {
+        size_t operator() (const string &s) const
+        {
+            return hash<const char*>()(s.c_str());
+        }
+    };
 }
 
-//将数据整合到一个vector内方便做全排列
-void ChangeItemAlone(vector<string> * m_lsTempSupport, vector<vector<string> > *m_llsSupport)
+const int IN = 105;
+const int TN = 3005;
+
+bitset<TN> I[IN];//记录矩阵
+bitset<TN> INote[IN];//记录原始矩阵
+int n;//T的数量
+int iNum;//I的数量
+string iSet, dfsSet;//iSet, 现有的集合，dfsSet搜索时候用的集合
+string tSet;//T的集合
+hash_map<string, bitset<TN> > hashNote;
+int iCount[IN];
+int tCount[TN];
+int iPs;//I的频数
+int tPs;//T的频数
+int xs;//项数
+int topNum;//每次组合的个数（每次+1）
+int nowNum;//符合条件的项数
+
+void init()
 {
-	m_lsTempSupport->clear();
-	for (int i = 0; i < m_llsSupport->size(); i++)
-	{
-		for (int j = 0; j < m_llsSupport->at(i).size(); j++)
-		{
-			bool isExist = false;
-			for (int k = 0; k < m_lsTempSupport->size(); k++)
-			{
-				if (m_llsSupport->at(i).at(j) == m_lsTempSupport->at(k))
-				{
-					isExist = true;
-					break;
-				}
-			}
-			if (!isExist)
-			{
-				m_lsTempSupport->push_back(m_llsSupport->at(i).at(j));
-			}
-		}
-	}
-	return;
+    iSet = "";
+    for(int i = 1; i <= iNum; ++i)
+    {
+        iSet += i + '0';
+    }
+    dfsSet = iSet;
+    tSet = "";
+    for(int i = 1; i <= n; ++i)
+    {
+        tSet += '0' + i;
+    }
 }
 
-//全排列找到C
-void FullArray(int m_nStartPosition, int m_nItemCount, vector<string> *m_lsTempSupport, vector<string> *m_lsTempOriginal, vector<vector<string> > *m_llsItems)
+void in()//输入转换为矩阵
 {
-	if (m_nItemCount == m_lsTempOriginal->size())
-	{
-		m_llsItems->push_back((*m_lsTempOriginal));
-		return;
-	}
-
-	for (int i = m_nStartPosition; i < m_lsTempSupport->size(); i++)
-	{
-		m_lsTempOriginal->push_back(m_lsTempSupport->at(i));
-		m_lsTempSupport->erase(m_lsTempSupport->begin() + i);
-		FullArray(i, m_nItemCount, m_lsTempSupport, m_lsTempOriginal, m_llsItems);
-		m_lsTempSupport->insert(m_lsTempSupport->begin() + i, m_lsTempOriginal->back());
-		m_lsTempOriginal->pop_back();
-	}
-	return;
+    scanf("%d%d", &n, &iNum);
+    for(int i = 1; i <= n; ++i)
+    {
+        int m;
+        scanf("%d", &m);
+        while(m--)
+        {
+            int a;
+            scanf("%d", &a);
+            I[a][i] = 1;
+            INote[a][i] = 1;
+        }
+    }
 }
 
-//扫描C2来获得未精简的L2
-void ScannerItems(vector<string> *m_lsTempSupport, vector<vector<string> > *m_llsOriginal, vector<vector<string> > *m_llsItems, vector<vector<string> > *m_llsSupport, vector<int> *m_lsSupportCount)
+void addICount(const string &s)
 {
-	m_llsSupport->clear();
-	m_lsSupportCount->clear();
-	m_lsTempSupport->clear();
+    for(int i = 0; i < s.length(); ++i)
+    {
+        iCount[s[i] - '0']++;
+    }
+}
 
-	for (int i = 0; i < m_llsItems->size(); i++)
-	{
-		for (int oi = 0; oi < m_llsOriginal->size(); oi++)
-		{
-			int m_nCount = 0;
-			for (int j = 0; j < m_llsItems->at(i).size(); j++)
-			{
-				for (int oj = 0; oj < m_llsOriginal->at(oi).size(); oj++)
-				{
-					if (m_llsItems->at(i).at(j) == m_llsOriginal->at(oi).at(oj))
-					{
-						m_nCount++;
-						m_lsTempSupport->push_back(m_llsItems->at(i).at(j));
-						break;
-					}
-				}
-			}
-			if (m_nCount == m_llsItems->at(i).size())
-			{
-				bool m_bHasItem = false;
-				for (int si = 0; si < m_llsSupport->size(); si++)
-				{
-					int m_nIsSameCount = 0;
-					for (int sj = 0; sj < m_llsSupport->at(si).size(); sj++)
-					{
-						for (int ti = 0; ti < m_lsTempSupport->size(); ti++)
-						{
-							if (m_llsSupport->at(si).at(sj) == m_lsTempSupport->at(ti))
-							{
-								m_nIsSameCount++;
-								break;
-							}
-						}
-					}
-					if (m_nIsSameCount == m_llsSupport->at(si).size())
-					{
-						m_bHasItem = true;
-						m_lsSupportCount->at(si)++;
-						break;
-					}
-				}
-				if (!m_bHasItem)
-				{
-					m_llsSupport->push_back((*m_lsTempSupport));
-					m_lsSupportCount->push_back(1);
-				}
-			}
-			m_lsTempSupport->clear();
-		}
-	}
+void addTCount(const bitset<TN> &bit)
+{
+    for(int i = 1; i <= n; ++i)
+    {
+        if(bit[i])
+        {
+            int temp = tSet[i - 1] - '0';
+            tCount[temp]++;
+        }
+    }
+}
+
+void add(const string s, const bitset<TN> &bit)//向hashNote加入I1，I2和它的bit, 并统计iCount, tCount
+{
+    hashNote.insert(pair<string, bitset<TN> > (s, bit));
+    addTCount(bit);
+    if(bit.count() >= iPs)
+    {
+        nowNum++;
+        addICount(s);
+    }
+}
+
+void dfs(int x, int num, int topNum, bitset<TN> bit)//查找所有组合
+{
+    printf("x = %d num = %d topNum = %d bit = ", x, num, topNum);
+    debug(bit, 0, 5);
+    printf("\n");
+    if(num == topNum)
+    {
+        add(dfsSet, bit);
+        return ;
+    }
+    for(int i = x; i <= iNum; ++i)
+    {
+//        if(n - i >= topNum - num)//剪枝，如果剩下的搜索项少于还需要的搜索项，就剪枝
+        {
+            dfsSet[num] = iSet[i - 1];
+            bitset<TN> nextBit = bit & I[iSet[i - 1] - '0'];
+            dfs(i + 1, num + 1, topNum, nextBit);
+        }
+    }
+}
+
+void testOut()
+{
+    hash_map<string, bitset<TN> >::iterator it = hashNote.begin();
+    while(it != hashNote.end())
+    {
+        if(it -> second.count() >= iPs)
+        {
+            cout << it -> first << ' ';
+            bitset<TN> bit = it -> second;
+            cout << " bit.count() = " << bit.count() << "   ";
+            debug(bit, 1, n);
+            cout << endl;
+        }
+        it++;
+    }
+}
+
+void updateISet()//更新I集合
+{
+    string temISet = "";
+    for(int i = 1; i <= iNum; ++i)
+    {
+        if(iCount[i] >= iPs)
+        {
+            temISet += iSet[i - 1];
+        }
+    }
+    iSet = temISet;
+    iNum = iSet.length();
+}
+
+void updateTSet()
+{
+    string temTSet = "";
+    for(int i = 1; i <= n; ++i)
+    {
+        if(tCount[i] >= tPs)
+        {
+            temTSet += tSet[i - 1];
+        }
+    }
+    tSet = temTSet;
+    n = tSet.length();
+}
+
+void updateI()
+{
+    for(int i = 0; i < iSet.length(); ++i)
+    {
+        bitset<TN> temBit(0);;
+        for(int k = 0; k < tSet.length(); ++k)
+        {
+            temBit[k + 1] = I[i + 1][tSet[k] - '0'];
+        }
+        I[i + 1] = temBit;
+    }
+    for(int i = 1; i <= n; ++i)
+    {
+        debug(I[i], 1, iNum);
+    }
 }
 
 int main()
 {
-
-	char m_cFilePath[1000];
-	cout << "Please Input File Path" << endl;
-	gets(m_cFilePath);
-	ifstream m_fsIn(m_cFilePath, ios::in);
-	if(!m_fsIn.is_open())
-	{
-		cout << "error" << endl;
-		return 0;
-	}
-	char m_cLine[1000] = {0};
-	string m_strTemp;
-
-	int m_nTempCount = 0, m_nCount = 0, m_nThreshold;
-	string str;
-	vector<int> m_lnSupportCount;
-	vector<string> m_lsTempOriginal, m_lsTempSupport;
-	vector<vector<string> > m_llsOriginal, m_llsItems, m_llsSupport;
-	cout << "Please Input Minspu:" << endl;
-	cin >> m_nThreshold;
-	time_t start, end, time;
-	start = clock();
-	//cout << '1' << endl;
-	while(m_fsIn.getline(m_cLine, sizeof(m_cLine)))
-	{
-		stringstream m_ssWord(m_cLine);
-		//cout << m_ssWord.width();
-		while(m_ssWord)
-		{
-			m_ssWord >> m_strTemp;
-		/*	bool m_bExist = false;
-			for(int i = 0; i < m_llsSupport.size(); i++)
-			{
-				for (int j = 0; j < m_llsSupport.at(i).size(); j++)
-				{
-					if (m_strTemp == m_llsSupport.at(i).at(j))
-					{
-						m_lnSupportCount.at(i)++;
-						m_bExist = true;
-						break;
-					}
-				}
-
-				vector<int>::iterator m_viResult = find(m_llsSupport.at(i).begin(), m_llsSupport.at(i).end(), m_strTemp);
-				if(m_viResult != m_llsSupport.at(i).end())
-				{
-					m_lnSupportCount.at(i)++;
-					m_bExist = true;
-					break;
-				}
-
-			}
-			if(!m_bExist)
-			{
-				m_lsTempSupport.push_back(m_strTemp);
-				m_llsSupport.push_back(m_lsTempSupport);
-				m_lnSupportCount.push_back(1);
-				m_lsTempSupport.clear();
-			}
-*/
-			m_lsTempOriginal.push_back(m_strTemp);
-		}
-		m_lsTempOriginal.pop_back();
-		m_llsOriginal.push_back(m_lsTempOriginal);
-		m_lsTempOriginal.clear();
-	}
-	//cout << 2 << endl;
-/*
-	m_lsTempSupport.push_back(0);
-	m_lnSupportCount.push_back(0);
-	m_llsSupport.push_back(m_lsTempSupport);
-*/
-//	cout << "i am here " << endl;
-//	ScannerItems(&m_lsTempSupport, &m_llsOriginal, &m_llsItems, &m_llsSupport, &m_lnSupportCount);
-	for(int k = 0; k < m_llsOriginal.size(); k++)
-	{
-		for(int z = 0; z < m_llsOriginal.at(k).size(); z++)
-		{
-
-			bool m_bExist = false;
-
-			for(int i = 0; i < m_llsSupport.size(); i++)
-			{
-				for (int j = 0; j < m_llsSupport.at(i).size(); j++)
-				{
-					//cout << 3 << endl;
-					if (m_llsOriginal.at(k).at(z) == m_llsSupport.at(i).at(j))
-					{
-						m_lnSupportCount.at(i)++;
-						m_bExist = true;
-						break;
-					}
-				}
-			}
-			if(!m_bExist)
-			{
-				m_lsTempSupport.push_back(m_llsOriginal.at(k).at(z));
-				m_llsSupport.push_back(m_lsTempSupport);
-				m_lnSupportCount.push_back(1);
-				m_lsTempSupport.clear();
-			}
-		}
-	}
-	//cout << m_llsOriginal.size()<< endl;
-	/*for(int i = 0; i < m_llsOriginal.size(); i++)
-	{
-		for(int j = 0; j < m_llsOriginal.at(i).size(); j++)
-		{
-			cout << m_llsOriginal.at(i).at(j) << ' ';
-		}
-		cout << endl;
-	}	*/
-
-/*
-	while (cin >> m_nCount)
-	{
-		if (m_nCount != m_nTempCount)
-		{
-			m_llsOriginal.push_back(m_lsTempOriginal);
-			m_lsTempOriginal.clear();
-			m_nTempCount = m_nCount;
-		}
-		cin >> str;
-		m_lsTempOriginal.push_back(str);
-
-		bool isExist = false;
-
-		for (int i = 0; i < m_llsSupport.size(); i++)
-		{
-			for (int j = 0; j < m_llsSupport.at(i).size(); j++)
-			{
-				if (str == m_llsSupport.at(i).at(j))
-				{
-					m_lnSupportCount.at(i)++;
-					isExist = true;
-					break;
-				}
-			}
-		}
-		if (!isExist)
-		{
-			m_lsTempSupport.push_back(str);
-			m_llsSupport.push_back(m_lsTempSupport);
-			m_lnSupportCount.push_back(1);
-			m_lsTempSupport.clear();
-		}
-	}
-
-	m_llsOriginal.push_back(m_lsTempOriginal);
-	m_lsTempOriginal.clear();
-	m_nTempCount = m_nCount;
-*/
-	//JustACout(m_llsOriginal, m_lnSupportCount);
-	/*for(int i = 0; i < m_llsOriginal.size(); i++)
-	{
-		for(int j = 0; j < m_llsOriginal.at(i).size(); j++)
-		{
-			cout << m_llsOriginal.at(i).at(j) << ' ';
-		}
-		cout << endl;
-	}*/
-	//JustACout(m_llsSupport, m_lnSupportCount);
-	DelMinNum(&m_lnSupportCount, &m_llsSupport, m_nThreshold);
-/*
-	for (int i = 0; i < m_lsTempSupport.size(); i++)
-	{
-		cout << m_lsTempSupport.at(i) << endl;
-	}
-	for (int i = 0; i < m_llsSupport.size(); i++)
-	{
-		for (int j = 0; j < m_llsSupport.at(i).size(); j++)
-		{
-			cout << m_llsSupport.at(i).at(j) << ' ';
-		}
-		cout << m_lnSupportCount.at(i) << endl;
-	}
-*/
-	JustACout(m_llsSupport, m_lnSupportCount);
-	int m_nLength = 2;
-	//cout << endl << m_llsSupport.size() << endl;
-	while (m_llsSupport.size() > 0)
-	{
-		ChangeItemAlone(&m_lsTempSupport, &m_llsSupport);
-
-		m_lsTempOriginal.clear();
-		m_llsItems.clear();
-		FullArray(0, m_nLength++, &m_lsTempSupport, &m_lsTempOriginal, &m_llsItems);
-		ScannerItems(&m_lsTempSupport, &m_llsOriginal, &m_llsItems, &m_llsSupport, &m_lnSupportCount);
-
-
-		DelMinNum(&m_lnSupportCount, &m_llsSupport, m_nThreshold);
-		JustACout(m_llsSupport, m_lnSupportCount);
-		//cout << m_llsSupport.size() << endl;
-/*
-		for (int i = 0; i < m_lsTempSupport.size(); i++)
-			{
-			cout << m_lsTempSupport.at(i) << endl;
-		}
-		for (int i = 0; i < m_llsSupport.size(); i++)
-		{
-			for (int j = 0; j < m_llsSupport.at(i).size(); j++)
-			{
-				cout << m_llsSupport.at(i).at(j) << ' ';
-			}
-			cout << m_lnSupportCount.at(i) << endl;
-		}
-		cout << endl;
-*/
-		//JustACout(m_llsSupport, m_lnSupportCount);
-		if (m_llsSupport.size() < 2)
-		{
-			break;
-		}
-	}
-
-
-	/*for (int i = 0; i < m_lsTempSupport.size(); i++)
-	{
-		cout << m_lsTempSupport.at(i) << endl;
-	}
-	for (int i = 0; i < m_llsSupport.size(); i++)
-	{
-		for (int j = 0; j < m_llsSupport.at(i).size(); j++)
-		{
-			cout << m_llsSupport.at(i).at(j) << ' ';
-		}
-	cout << m_lnSupportCount.at(i) << endl;
-	}*/
-
-	//JustACout(m_llsItems);
-	end = clock();
-	//time = end - time;
-	//cout << "time is " << time << endl;
-	cout << start << ' ' << end << ' ' << end - start << endl;
-	system("pause");
-	return 0;
+    in();
+    init();
+    //
+    iPs = 2;
+    tPs = 2;
+    xs = 3;
+    topNum = 2;
+    while(true)
+    {
+        hashNote.clear();
+        bitset<TN> a;
+        a.flip();//置成全1(全部取反)
+        dfsSet = "";
+        for(int i = 0; i < topNum; ++i)
+        {
+            dfsSet += "1";
+        }
+        memset(iCount, 0, sizeof(iCount));
+        memset(tCount, 0, sizeof(tCount));
+        nowNum = 0;
+        dfs(1, 0, topNum, a);
+        cout << "iSet = " << iSet << endl;
+        cout << "tSet = " << tSet << endl;
+        cout << "hashNote.size() = " << hashNote.size() << endl;
+        if(nowNum < xs)
+        {
+            break;
+        }
+        topNum++;
+        testOut();
+        debug(iCount, 1, iNum);
+        debug(tCount, 1, n);
+        updateISet();
+        updateTSet();
+        updateI();
+    }
+    printf("The answer is :\n");
+    testOut();
+    //
+    return 0;
 }
+/*
+10 5
+2 1 2
+2 2 3
+2 1 2
+4 1 2 3 4
+3 1 2 3
+3 1 3 5
+2 2 3
+3 1 3 4
+1 4
+2 3 5
+*/
+
